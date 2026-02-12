@@ -55,9 +55,11 @@ const handleVisibilityChange = () => {
 };
 
 onMounted(() => {
+  const splash = document.getElementById('splash')
   userStore.checkAuth();
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
+  if (splash) splash.classList.add('fade-out')
 });
 
 onBeforeUnmount(() => {
