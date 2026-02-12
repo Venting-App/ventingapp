@@ -7,28 +7,141 @@
     <meta name="theme-color" content="#4f46e5" />
     <meta name="description" content="A safe space to express yourself, share your thoughts, and connect with others who understand." />
     <meta http-equiv="Cache-Control" content="no-store" />
+    <link rel="canonical" href="https://venting-app.com/" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://ventingapp.com/" />
-    <meta property="og:title" content="VentingApp - Share Your Thoughts Anonymously" />
+    <meta property="og:url" content="https://venting-app.com/" />
+    <meta property="og:title" content="VentingApp – A Safe Space to Share and Connect" />
     <meta property="og:description" content="A safe space to express yourself, share your thoughts, and connect with others who understand." />
-    <meta property="og:image" content="/og-image.jpg" />
+    <meta property="og:image" content="https://venting-app.com/fav.jpeg" />
+    <meta property="og:site_name" content="VentingApp" />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="1024" />
+    <meta name="application-name" content="VentingApp" />
+    <meta name="apple-mobile-web-app-title" content="VentingApp" />
+
+
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://ventingapp.com/" />
-    <meta property="twitter:title" content="VentingApp - Share Your Thoughts Anonymously" />
+    <meta property="twitter:url" content="https://venting-app.com/" />
+    <meta property="twitter:title" content="VentingApp – A Safe Space to Share and Connect" />
     <meta property="twitter:description" content="A safe space to express yourself, share your thoughts, and connect with others who understand." />
-    <meta property="twitter:image" content="/og-image.jpg" />
+    <meta property="twitter:image" content="https://venting-app.com/fav.jpeg" />
+    <meta name="twitter:site" content="@venting_app" />
+    <meta name="twitter:creator" content="@venting_app">
 
-    <title>VentingApp - Share Your Thoughts Anonymously</title>
+    <title>VentingApp – A Safe Space to Share and Connect</title>
 
-    <!-- Preconnect to API -->
     <link rel="preconnect" href="http://localhost:8000" />
+
+    <style>
+      /* Reset and Base Styles (Since Tailwind isn't loaded yet) */
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #f9fafb; /* bg-gray-50 */
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      /* Splash Container */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f9fafb;
+      }
+
+      /* Logo Wrapper */
+      #splash-logo {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        width: auto;
+        transform: scale(0.4);
+        opacity: 0;
+        animation: splash-approach 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        will-change: transform, opacity;
+      }
+
+      /* Icon Box */
+      .splash-icon-box {
+        width: 72px;  /* w-18 equivalent */
+        height: 72px; /* h-18 equivalent */
+        background-color: #ede9fe; /* violet-100 */
+        border-radius: 0.75rem; /* rounded-xl */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #7c3aed; /* violet-600 */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      }
+
+      /* Text Styles */
+      #splash-logo h1 {
+        margin: 0;
+        font-weight: 800;
+        color: #27272a; /* zinc-800 */
+        letter-spacing: -0.025em;
+        white-space: nowrap;
+        font-size: clamp(2rem, 6vw, 4.5rem);
+      }
+
+      #splash-logo h1 span {
+        color: #7c3aed; /* violet-600 */
+      }
+
+      /* Animations */
+      @keyframes splash-approach {
+        0% {
+          transform: scale(0.4);
+          opacity: 0;
+        }
+        15% {
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      /* Fade out transition when app mounts */
+      .fade-out {
+        opacity: 0;
+        transition: opacity 240ms ease-out;
+        pointer-events: none;
+      }
+    </style>
   </head>
-  <body class="bg-gray-50">
-    <div id="app"></div>
+  <body>
+    <div id="app">
+      <div id="splash">
+        <div id="splash-logo">
+          <div class="splash-icon-box">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                width="42"
+                height="42"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <h1>Venting<span>App</span></h1>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
