@@ -6,6 +6,8 @@ import { message } from 'ant-design-vue';
 export const useUserStore = defineStore('user', () => {
   const user = ref(null);
   const loading = ref(false);
+  const loadingAuth = ref(false);
+  const checkAuthHadRun = ref(false);
   const error = ref(null);
   const subscriptions = ref([]);
 
@@ -63,6 +65,8 @@ export const useUserStore = defineStore('user', () => {
     if (!accessToken) return false;
 
     try {
+      loadingAuth.value = true;
+      if (!checkAuthHadRun.value) checkAuthHadRun.value = true;
       const response = await api.get('account/users/me/');
       user.value = response.data;
       await fetch_subscriptions();
@@ -71,6 +75,8 @@ export const useUserStore = defineStore('user', () => {
     } catch (error) {
       clearAuth();
       return false;
+    } finally {
+      loadingAuth.value = false;
     }
   };
 
@@ -218,6 +224,8 @@ export const useUserStore = defineStore('user', () => {
     verifyEmail,
     resendOtp,
     checkAuth,
+    loadingAuth,
+    checkAuthHadRun,
     subscriptions,
     userInitials,
     sendOtp,

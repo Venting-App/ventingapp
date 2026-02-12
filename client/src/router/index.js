@@ -170,9 +170,13 @@ const router = createRouter({
 // Navigation guard to check authentication and permissions
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
-  
   // Check if we need to verify authentication state
-  if (!userStore.user && localStorage.getItem('access_token')) {
+  if (
+    userStore.checkAuthHadRun && 
+    !userStore.loadingAuth && 
+    !userStore.user && 
+    localStorage.getItem('access_token')
+  ) {
     try {
       // Try to refresh the user data if we have a token
       await userStore.checkAuth();
@@ -189,7 +193,11 @@ router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication
   if (to.matched.some(record => record.meta.requiresAuth)) {
     // Check if user is not authenticated
-    if (!userStore.isAuthenticated) {
+    if (
+      userStore.checkAuthHadRun && 
+      !userStore.loadingAuth &&
+      !userStore.isAuthenticated
+    ) {
       next({ name: 'Login', query: { redirect: to.fullPath } });
       return;
     }

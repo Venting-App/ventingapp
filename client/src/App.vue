@@ -1,5 +1,5 @@
 <script setup>
-import { RouterView, useRoute } from 'vue-router';
+import { RouterView, useRoute, useRouter } from 'vue-router';
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import SupportModal from '@/components/common/SupportModal.vue';
 
@@ -7,7 +7,7 @@ import CelebrationModal from '@/components/transaction/CelebrationModal.vue';
 import { useUserStore } from '@/stores/user';
 import { useSupportStore } from '@/stores/support';
 import { useTransactionStore } from '@/stores/transaction';
-const route = useRoute();
+const router = useRouter();
 const showCelebration = ref(false);
 const recentTransaction = ref(null);
 const userStore = useUserStore();
@@ -29,13 +29,15 @@ const checkForSuccess = async () => {
     }
 };
 
-// Check when route changes
-watch(() => route.query, () => {
-  userStore.checkAuth();
-  console.log("waiting a second... before checking success")
-  setTimeout(() => {
-    checkForSuccess();
-  }, 1000);
+router.afterEach(async (to, from) => {
+  if (to.fullPath !== from.fullPath) {
+    console.log('Route changed', { from: from.fullPath, to: to.fullPath });
+
+    await userStore.checkAuth();
+    setTimeout(() => {
+      checkForSuccess();
+    }, 1000);
+  }
 });
 
 window.addEventListener("pageshow", (event) => {
