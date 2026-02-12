@@ -58,6 +58,14 @@
         background-color: #f9fafb;
       }
 
+      /* This container keeps logo+loader together vertically */
+      .splash-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* centers horizontally */
+      }
+
+
       /* Logo Wrapper */
       #splash-logo {
         display: flex;
@@ -118,25 +126,58 @@
         transition: opacity 240ms ease-out;
         pointer-events: none;
       }
+      /* Loader styling (already delayed) */
+      .splash-loader {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem; /* spacing below logo */
+        font-size: 1rem;
+        color: #27272a;
+        opacity: 0;
+        animation: fadeIn 0.5s ease forwards;
+        animation-delay: 1s;
+      }
+
+      /* Spinner */
+      .spinner {
+        width: 1rem;
+        height: 1rem;
+        border: 3px solid #ede9fe;
+        border-top-color: #7c3aed;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes fadeIn { to { opacity: 1; } }
+      @keyframes spin { to { transform: rotate(360deg); } }
     </style>
   </head>
   <body>
     <div id="splash">
-      <div id="splash-logo">
-        <div class="splash-icon-box">
-          <svg xmlns="http://www.w3.org/2000/svg"
-              width="42"
-              height="42"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
+      <div class="splash-center">
+
+        <div id="splash-logo">
+          <div class="splash-icon-box">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                width="42"
+                height="42"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <h1>Venting<span>App</span></h1>
+          
         </div>
-        <h1>Venting<span>App</span></h1>
+        <div class="splash-loader">
+          <div class="spinner"></div>
+          <span>Loading data...</span>
+        </div>
       </div>
     </div>
     <div id="app">
