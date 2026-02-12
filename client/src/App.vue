@@ -36,7 +36,7 @@ watch(() => route.query, () => {
   setTimeout(() => {
     checkForSuccess();
   }, 1000);
-}, { immediate: true });
+});
 
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
@@ -54,12 +54,15 @@ const handleVisibilityChange = () => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   const splash = document.getElementById('splash')
-  userStore.checkAuth();
+  await userStore.checkAuth();
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
   if (splash) splash.classList.add('fade-out')
+  setTimeout(() => {
+    checkForSuccess();
+  }, 1000);
 });
 
 onBeforeUnmount(() => {
