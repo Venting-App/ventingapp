@@ -61,7 +61,12 @@ onMounted(async () => {
   await userStore.checkAuth();
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  if (splash) splash.classList.add('fade-out')
+  if (splash) {
+    splash.classList.add('fade-out');
+    setTimeout(() => {
+      document.body.classList.remove('splash-active');
+    }, 240);
+  }
   setTimeout(() => {
     checkForSuccess();
   }, 1000);

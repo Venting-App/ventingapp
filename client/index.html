@@ -151,9 +151,14 @@
 
       @keyframes fadeIn { to { opacity: 1; } }
       @keyframes spin { to { transform: rotate(360deg); } }
+      body.splash-active {
+        overflow: hidden;
+        height: 100%;
+      }
+
     </style>
   </head>
-  <body>
+  <body class="splash-active">
     <div id="splash">
       <div class="splash-center">
 
