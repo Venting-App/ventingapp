@@ -56,7 +56,7 @@
                     </div>
                     <div class="flex-1 min-w-0">
                       <p class="font-semibold text-sm text-zinc-900">{{ post.posted_by?.name || 'Anonymous' }}</p>
-                      <div class="text-sm text-zinc-600 mt-0.5 line-clamp-3">
+                      <div class="text-sm text-zinc-600 mt-0.5">
                         <ShowMore :text="post.description"/>
                       </div>
                       <p class="text-xs text-zinc-400 mt-1 font-medium">{{ post.formatted_created_at }}</p>
