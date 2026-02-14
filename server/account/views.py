@@ -359,7 +359,7 @@ class UserViewset(ListModelMixin, CreateModelMixin, GenericViewSet):
             removed=True,
             reconnection_requested = True,
             reconnection_requested_by = user_to_reconnect
-        )
+        ).first()
         if not existing_conn:
             return Response(
                 {"error": "There are no requests to reconnect that you can accept."}, 

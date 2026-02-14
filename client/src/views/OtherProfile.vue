@@ -39,9 +39,9 @@
     <ConnectionModal 
       v-if="showConnectionsModal" 
       @close="showConnectionsModal = false" 
-      @connection-updated="handleConnectionsUpdated"
       :show="showConnectionsModal" 
       :connections="connections"
+      :post_id="profileStore.selectedPost?.id"
       :loadingConnections="loadingConnections"
     />
     <ConnectionRequestModal
@@ -79,12 +79,6 @@ const showConnectionsModal = ref(false);
 const connections = ref([]);
 
 const loadingConnections = ref(false);
-
-const handleConnectionsUpdated = async () => {
-  await fetchConnections()
-  emit('connection-updated')
-  showConnectionsModal.value = false;
-}
 
 const fetchConnections = async () => {  
   try {

@@ -54,7 +54,6 @@
                       @donate="openDonationModal"
                       @follow="handleFollowClick"
                       @update:post="handlePostUpdate"
-                      @connection-updated="handleConnectionsUpdated"
                     />
                   </div>
                </div>
@@ -149,7 +148,7 @@ const openDonationModal = (p) => {
 const handleFollowClick = async (p, showDonate) => {
     if (p.removed_connection && !p.pending_connection && !p.rejected_connection) {
         postStore.setSelectedUserForConnection(p);
-        postStore.setShowConnectionModal(true);
+        postStore.setShowConnectionRequestModal(true);
     } else {
         await postStore.handleFollow(p, showDonate);
         await userStore.checkAuth();
@@ -161,11 +160,6 @@ const handlePostUpdate = (updatedPost) => {
     post.value = updatedPost;
     postStore.handleUpdatePostObj(updatedPost);
     emit('update:post', updatedPost);
-};
-
-const handleConnectionsUpdated = async (postId) => {
-    await postStore.handleConnectionsUpdated(postId);
-    await fetchPost(true);
 };
 
 const closeModal = () => {

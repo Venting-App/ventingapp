@@ -33,13 +33,15 @@
                 :data-id="`post-${post.id}`"
                 :liking="likingPostId === post.id"
                 :saving="savingPostId === post.id"
-                @donate="openDonationModal"
-                @chat="handleChat"
-                @save="handleSave"
-                @like="handleLike"
-                @follow="handleFollowClick"
-                @update:post="handleUpdatePostObj"
-                @connection-updated="handleConnectionsUpdated(post.id)"
+                :is-current-user-post="getIsCurrentUserPost(post)"
+                :processing-donation="processingDonation"
+                @donate-click="handleDonate(post)"
+                @chat-click="handleChat(post)"
+                @save-click="handleSave(post)"
+                @like-click="handleLike(post)"
+                @follow-click="handleFollowClick(post)"
+                @comment-click="handleCommentClick(post)"
+                @share-click="handleShareClick(post)"
             />
           
             <!-- Load More Button -->
@@ -59,32 +61,29 @@
       </div>
     </main>
     
-    <!-- Donation Modal -->
-    <DonateModal
-      :model-value="showDonationModal"
-      @update:model-value="setShowDonationModal"
-      :payment-methods="selectedPost?.payment_info_list || []"
+    <CommentModal 
+      v-if="showCommentModal"
+      :post="selectedPost"
+      :show="showCommentModal"
+      :user_id="user_id"
+      :is-current-user-post="getIsCurrentUserPost(selectedPost)"
+      :processing-donation="processingDonation"
+      @like="handleLike(selectedPost)"
+      @save="handleSave(selectedPost)"
+      @share="handleShareClick(selectedPost)"
+      @close="closeCommentModal"
+      @update:post="handleUpdatePostObj(selectedPost)"
+      @follow-click="handleFollowClick(selectedPost)"
+      @chat-click="handleChat(selectedPost)"
+      @donate-click="handleDonate(selectedPost)"
     />
-    
-    <!-- Connection Request Modal -->
-    <ConnectionRequestModal
-      v-if="showConnectionModal"
-      :is-open="showConnectionModal"
-      :user-name="selectedUserForConnection?.posted_by?.name || 'this user'"
-      @close="closeConnectionModal"
-      @confirm="confirmConnectionRequest"
-    />
-    
 
-    <!-- Connects Modal -->
-    <ConnectsModal
-      :is-open="isConnectsModalOpen"
-      :current-connects="currentConnects"
-      :connects-data="connectsStore.connectsData"
-      :loading="connectsStore.isLoading"
-      @close="setIsConnectsModalOpen(false)"
-      @purchase="connectsStore.handlePurchaseConnects"
+    <FeedModals
+        v-if="!showCommentModal"
+        :user_id="user_id"
+        @follow-click="handleFollowClick"
     />
+
   </div>
 </template>
 
@@ -92,13 +91,14 @@
 import { onMounted, computed, watch, onUnmounted, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
 import FeedItem from '@/components/feed/FeedItem.vue';
-import DonateModal from '@/components/feed/DonateModal.vue';
-import ConnectionRequestModal from '@/components/feed/ConnectionRequestModal.vue';
-import ConnectsModal from '@/components/connects/ConnectsModal.vue';
+import CommentModal from '@/components/feed/CommentModal.vue';
+import FeedModals from '@/components/feed/FeedModals.vue';
+import { useConnectionStore } from '@/stores/connection';
 import { useConnectsStore } from '@/stores/connect';
 import { usePostStore } from '@/stores/post';
 import { useOtherProfilePostStore } from '@/stores/profile';
 import { useRouter, useRoute } from 'vue-router';
+const connectionStore = useConnectionStore();
 const connectsStore = useConnectsStore();
 const userStore = useUserStore();
 const postStore = usePostStore();
@@ -107,10 +107,30 @@ const router = useRouter();
 const route = useRoute();
 const props = defineProps({
     user_id: {
-        type: String,
+        type: [String, Number],
         required: false
     }
 })
+
+const getIsCurrentUserPost = (post) => {
+  return userStore.user && post.posted_by && userStore.user.id === post.posted_by.id;
+};
+
+const handleCommentClick = (post) => {
+    if (props.user_id == null) {
+        postStore.openCommentModal(post);
+    } else {
+        profileStore.openCommentModal(post);
+    }
+};
+
+const closeCommentModal = () => {
+    if (props.user_id == null) {
+        postStore.closeCommentModal();
+    } else {
+        profileStore.closeCommentModal();
+    }
+};
 
 const loading = computed(() => props.user_id == null ? postStore.loading : profileStore.loading)
 const posts = computed(() => {
@@ -133,15 +153,11 @@ const noPostPlaceholder = computed(() => {
 
 const likingPostId = computed(() => props.user_id == null ? postStore.likingPostId : profileStore.likingPostId)
 const savingPostId = computed(() => props.user_id == null ? postStore.savingPostId : profileStore.savingPostId)
-
 const hasNextPage = computed(() => props.user_id == null ? postStore.hasNextPage : profileStore.hasNextPage)
 const loadingMore = computed(() => props.user_id == null ? postStore.loadingMore : profileStore.loadingMore)
-const showDonationModal = computed(() => props.user_id == null ? postStore.showDonationModal : profileStore.showDonationModal)
 const selectedPost = computed(() => props.user_id == null ? postStore.selectedPost : profileStore.selectedPost)
-const showConnectionModal = computed(() => props.user_id == null ? postStore.showConnectionModal : profileStore.showConnectionModal)
-const selectedUserForConnection = computed(() => props.user_id == null ? postStore.selectedUserForConnection : profileStore.selectedUserForConnection)
-const isConnectsModalOpen = computed(() => props.user_id == null ? postStore.isConnectsModalOpen : profileStore.isConnectsModalOpen)
-
+const showCommentModal = computed(() => props.user_id == null ? postStore.showCommentModal : profileStore.showCommentModal)
+const processingDonation = computed(() => props.user_id == null ? postStore.processingDonation : profileStore.processingDonation);
 
 const loadMore = () => {
     if (props.user_id == null) {
@@ -157,12 +173,70 @@ const openDonationModal = (post) => {
         profileStore.openDonationModal(post);
     }
 }
-const handleChat = async (post) => {
+
+const openConnectionsModal = (post) => {
     if (props.user_id == null) {
-        await postStore.handleChat(post, router);
+        postStore.openConnectionsModal(post);
     } else {
-        await profileStore.handleChat(post, router);
+        profileStore.openConnectionsModal(post);
     }
+}
+
+const openShareModal = (post) => {
+    if (props.user_id == null) {
+        postStore.openShareModal(post);
+    } else {
+        profileStore.openShareModal(post);
+    }
+}
+
+const setConnections = (value) => {
+    if (props.user_id == null) {
+        postStore.setConnections(value);
+    } else {
+        profileStore.setConnections(value);
+    }
+}
+
+const setConnectionPromptPurpose = (value) => {
+    if (props.user_id == null) {
+        postStore.setConnectionPromptPurpose(value);
+    } else {
+        profileStore.setConnectionPromptPurpose(value);
+    }
+}
+const setLoadingConnections = (value) => {
+    if (props.user_id == null) {
+        postStore.setLoadingConnections(value);
+    } else {
+        profileStore.setLoadingConnections(value);
+    }
+}
+
+const openConnectionPrompt = (post) => {
+    if (props.user_id == null) {
+        postStore.openConnectionPrompt(post);
+    } else {
+        profileStore.openConnectionPrompt(post);
+    }
+}
+const handleChat = async (post) => {
+    if (post.connected) {
+        if (props.user_id == null) {
+            await postStore.handleChat(post, router);
+        } else {
+            await profileStore.handleChat(post, router);
+        }
+    } else if (post.pending_connection || post.rejected_connection) {
+        // Show pending connection message
+        setConnectionPromptPurpose('chat');
+        openConnectionPrompt(post);
+    } else {
+        // Show connection prompt
+        setConnectionPromptPurpose('chat');
+        openConnectionPrompt(post);
+    }
+    
 }
 
 const handleSave = async (post) => {
@@ -181,6 +255,10 @@ const handleLike = async (post) => {
     }
 }
 
+const handleShareClick = (post) => {
+    openShareModal(post);
+}
+
 const handleUpdatePostObj = (post) => {
     if (props.user_id == null) {
         postStore.handleUpdatePostObj(post);
@@ -189,57 +267,50 @@ const handleUpdatePostObj = (post) => {
     }
 }
 
-const handleConnectionsUpdated = async (postId) => {
-    if (props.user_id == null) {
-        await postStore.handleConnectionsUpdated(postId);
-    } else {
-        await profileStore.handleConnectionsUpdated(postId);
-    }
-}
 
-const setShowDonationModal = (value) => {
-    if (props.user_id == null) {
-        postStore.setShowDonationModal(value);
-    } else {
-        profileStore.setShowDonationModal(value);
-    }
-}
+const handleDonate = async (post) => {
+  if (post.connected) {
+    // If already connected, proceed with donation
+    openDonationModal(post);
+  } else if (post.pending_connection || post.rejected_connection) {
+    // Show pending connection message
+    setConnectionPromptPurpose('donate');
+    openConnectionPrompt(post);
+  } else {
+    // Show connection prompt
+    setConnectionPromptPurpose('donate');
+    openConnectionPrompt(post);
+  }
+};
 
-const closeConnectionModal = () => {
-    if (props.user_id == null) {
-        postStore.closeConnectionModal();
-    } else {
-        profileStore.closeConnectionModal();
-    }
-}
-
-const confirmConnectionRequest = async (messageText = '') => {
-    if (props.user_id == null) {
-        await postStore.confirmConnectionRequest(messageText);
-    } else {
-        await profileStore.confirmConnectionRequest(messageText);
-    }
-}
-
-const setIsConnectsModalOpen = (value) => {
-    if (props.user_id == null) {
-        postStore.setIsConnectsModalOpen(value);
-    } else {
-        profileStore.setIsConnectsModalOpen(value);
-    }
-}
+const fetchConnections = async (post) => {
+  if (!post?.posted_by?.id) return;
+  
+  try {
+    setLoadingConnections(true);
+    const response = await connectionStore.fetchOurConnections(post?.posted_by?.id)
+    setConnections(response.data);
+    openConnectionsModal(post);
+  } catch (error) {
+    console.error('Error fetching connections:', error);
+  } finally {
+    setLoadingConnections(false);
+  }
+};
 
 const handleFollowClick = async (post, showDonate = false) => {
-    if (post.removed_connection && !post.pending_connection && !post.rejected_connection) {
+    if (post.pending_connection) {
+        fetchConnections(post);
+    } else if (post.removed_connection && !post.pending_connection && !post.rejected_connection) {
         // Show modal for reconnection request
         if (props.user_id == null) {
             postStore.setSelectedUserForConnection(post);
-            postStore.setShowConnectionModal(true);
+            postStore.setShowConnectionRequestModal(true);
         } else {
             profileStore.setSelectedUserForConnection(post);
-            profileStore.setShowConnectionModal(true);
+            profileStore.setShowConnectionRequestModal(true);
         }
-    } else {
+    } else if (!post.rejected_connection) {
         if (props.user_id == null) {
             await postStore.handleFollow(post, showDonate);
         } else {
@@ -250,7 +321,6 @@ const handleFollowClick = async (post, showDonate = false) => {
 };
 
 
-const currentConnects = computed(() => userStore.user?.connects || 0);
 
 watch(() => profileStore.isConnectsModalOpen, async () => {
     if (profileStore.isConnectsModalOpen) {

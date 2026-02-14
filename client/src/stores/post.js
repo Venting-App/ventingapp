@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { message } from 'ant-design-vue';
 import api from '@/api/axios';
 
@@ -10,8 +10,14 @@ export const usePostStore = defineStore('post', () => {
     const searchQuery = ref(null);
     const searchPostResults = ref([]);
     const searchNextPage = ref(null);
+    const isDesktop = ref(false)
+    const checkWidth = () => {
+      isDesktop.value = window.innerWidth > 425
+    }
 
+    const loadingConnections = ref(false);
     const searchProfileResults = ref([]);  
+    const connections = ref([]);
     const searchProfileNextPage = ref(null);
     const searchProfileHasNextPage = computed(() => {
         return !!searchProfileNextPage.value;
@@ -28,15 +34,31 @@ export const usePostStore = defineStore('post', () => {
         return !!nextPage.value;
     });
     const showDonationModal = ref(false);
+    const showCommentModal = ref(false);
+    const showConnectionsModal = ref(false);
+    const showShareModal = ref(false);
+    const connectionPromptPurpose = ref('donate'); 
+    const showConnectionPrompt = ref(false);
+    const processingDonation = ref(false);
+
     const selectedPost = ref(null);
     const likingPostId = ref(null);
     const savingPostId = ref(null);
-    const showConnectionModal = ref(false);
+    const showConnectionRequestModal = ref(false);
     const selectedUserForConnection = ref(null);
     const isConnectsModalOpen = ref(false);
 
     const setIsConnectsModalOpen = (value) => {
         isConnectsModalOpen.value = value;
+    }
+
+
+    const setLoadingConnections = (value) => {
+        loadingConnections.value = value;
+    }
+
+    const setConnections = (value) => {
+        connections.value = value;
     }
 
     const setShowDonationModal = (value) => {
@@ -47,10 +69,13 @@ export const usePostStore = defineStore('post', () => {
         selectedUserForConnection.value = value;
     }
 
-    const setShowConnectionModal = (value) => {
-        showConnectionModal.value = value;
+    const setShowConnectionRequestModal = (value) => {
+        showConnectionRequestModal.value = value;
     }  
 
+    const setProcessingDonation = (value) => {
+        processingDonation.value = value;
+    }
 
     const visiblePosts = ref([]);
     let visibilityObserver = null;
@@ -62,6 +87,17 @@ export const usePostStore = defineStore('post', () => {
             posts.value[index] = post;
         }
     }
+
+    const initBreakpoints = () => {
+        checkWidth()
+        window.addEventListener('resize', checkWidth)
+    }
+    const destroyBreakpoints = () => {
+        window.removeEventListener('resize', checkWidth)
+    }
+
+
+
 
     const fetchCount = async () => {
         try {
@@ -217,15 +253,40 @@ export const usePostStore = defineStore('post', () => {
         showDonationModal.value = true;
     };
 
+    const openCommentModal = (post) => {
+        selectedPost.value = post;
+        showCommentModal.value = true;
+    };
+
+    const closeCommentModal = () => {
+        showCommentModal.value = false;
+    };
+
+    const openShareModal = (post) => {
+        selectedPost.value = post;
+        showShareModal.value = true;
+    };
+    const closeShareModal = () => {
+        showShareModal.value = false;
+    };
+
+    const openConnectionPrompt = (post) => {
+        selectedPost.value = post;
+        showConnectionPrompt.value = true;
+    };
+    const setConnectionPromptPurpose = (purpose) => {
+        connectionPromptPurpose.value = purpose;
+    };
+    const closeConnectionPrompt = async () => {
+        showConnectionPrompt.value = false;
+    }
+
     const closeDonationModal = async (connected = false, router) => {
         if (connected && selectedPost.value) {
             // If user just connected, start a chat
             await handleChat(selectedPost.value, router);
         }
         showDonationModal.value = false;
-        setTimeout(() => {
-            selectedPost.value = null;
-        }, 300);
     };
 
 
@@ -281,8 +342,17 @@ export const usePostStore = defineStore('post', () => {
         }
     };
 
-    const closeConnectionModal = () => {
-        showConnectionModal.value = false;
+    const openConnectionsModal = (post) => {
+        selectedPost.value = post;
+        showConnectionsModal.value = true;
+    };
+
+    const closeConnectionsModal = () => {
+        showConnectionsModal.value = false;
+    };
+
+    const closeConnectionRequestModal = () => {
+        showConnectionRequestModal.value = false;
         selectedUserForConnection.value = null;
     };
 
@@ -290,7 +360,7 @@ export const usePostStore = defineStore('post', () => {
         if (!selectedUserForConnection.value) return;
         
         const post = selectedUserForConnection.value;
-        closeConnectionModal();
+        closeConnectionRequestModal();
         
         try {
             const postIndex = posts.value.findIndex(p => p.id === post.id);
@@ -327,37 +397,19 @@ export const usePostStore = defineStore('post', () => {
             let errorMessage = 'Failed to send connection request. Please try again.';
             
             if (error.response?.status === 400) {
-            if (error.response?.data?.detail?.includes('already connected')) {
-                errorMessage = 'You are already connected with this user';
-            } else if (error.response?.data?.detail?.includes('pending')) {
-                errorMessage = 'Connection request already pending';
-                if (postIndex !== -1) {
-                posts.value[postIndex].pending_connection = true;
+                if (error.response?.data?.detail?.includes('already connected')) {
+                    errorMessage = 'You are already connected with this user';
+                } else if (error.response?.data?.detail?.includes('pending')) {
+                    errorMessage = 'Connection request already pending';
+                    if (postIndex !== -1) {
+                    posts.value[postIndex].pending_connection = true;
+                    }
+                } else if (error.response?.data?.error) {
+                    errorMessage = error.response.data.error;
                 }
-            }
             }
             
             message.error(errorMessage);
-        }
-    };
-    const handleConnectionsUpdated = async (postId) => {
-        if (!postId) return;
-
-        // Check if post is already in the feed
-        const newPostData = await fetchPostById(postId);
-        const existingPost = posts.value.find(p => String(p.id) === String(postId));
-        if (existingPost) {
-            const postIndex = posts.value.findIndex(p => p.id === postId);
-            if (postIndex !== -1) {
-            posts.value[postIndex] = newPostData;
-            }
-            return;
-        }
-
-        // If not, fetch the post
-        if (newPostData) {
-            // Add to the beginning of the posts array
-            posts.value.unshift(newPostData);
         }
     };
 
@@ -375,7 +427,7 @@ export const usePostStore = defineStore('post', () => {
             // Set pending state
             const postIndex = posts.value.findIndex(p => p.id === post.id);
             if (postIndex !== -1) {
-            posts.value[postIndex].pending_connection = true;
+                posts.value[postIndex].pending_connection = true;
             }
 
             // Make the API call to either connect or disconnect
@@ -414,7 +466,7 @@ export const usePostStore = defineStore('post', () => {
             // Reset pending state on error
             const postIndex = posts.value.findIndex(p => p.id === post.id);
             if (postIndex !== -1) {
-            posts.value[postIndex].pending_connection = false;
+                posts.value[postIndex].pending_connection = false;
             }
             
             let errorMessage = `Failed to ${isConnected ? 'unfollow' : 'follow'} user. Please try again.`;
@@ -444,6 +496,14 @@ export const usePostStore = defineStore('post', () => {
             return null;
         }
     };
+
+    const updatePostFromBackend = async (postId) => {
+        if (!postId) return;
+        const response = await api.get(`post/posts/get_bulk/?id=${postId}`);
+        const post_updated = response?.data?.results && response?.data?.results?.length > 0 ? response?.data?.results[0] : null;
+        if (!post_updated) return;
+        handleUpdatePostObj(post_updated)
+    }
 
     // Check URL for post ID and handle post loading
     const checkUrlForPost = async (route) => {
@@ -648,6 +708,16 @@ export const usePostStore = defineStore('post', () => {
         searchNextPage.value = null;
     }
 
+    watch(posts, (newPosts) => {
+        if (selectedPost.value) {
+            const updatedPost = newPosts.find(p => p.id === selectedPost.value.id);
+            if (updatedPost) {
+                selectedPost.value = { ...selectedPost.value, ...updatedPost };
+            }
+        }
+    }, { deep: true });
+
+
     return {
         isInSearch,
         searchPostResults,
@@ -674,9 +744,40 @@ export const usePostStore = defineStore('post', () => {
         selectedPost,
         likingPostId,
         savingPostId,
-        showConnectionModal,
+        showConnectionRequestModal,
         selectedUserForConnection,
+        showCommentModal,
+        showConnectionPrompt,
+        showShareModal,
+        showConnectionsModal,
+        connectionPromptPurpose,
+        isDesktop,
+        loadingConnections,
+        setLoadingConnections,
+        connections,
+        setConnections,
+        initBreakpoints,
+        destroyBreakpoints,
 
+        openCommentModal,
+        closeCommentModal,
+
+        openConnectionPrompt,
+        closeConnectionPrompt,
+        setConnectionPromptPurpose,
+
+        openShareModal,
+        closeShareModal,
+
+        openConnectionsModal,
+        closeConnectionsModal,
+        updatePostFromBackend,
+        
+
+
+        processingDonation,
+        setProcessingDonation,
+        
         handleUpdatePostObj,
         fetchPostById,
         fetchPosts,
@@ -692,7 +793,6 @@ export const usePostStore = defineStore('post', () => {
         handleFollow,
         confirmConnectionRequest,
 
-        handleConnectionsUpdated,
         checkUrlForPost,
 
         startVisiblePostsPolling,
@@ -706,8 +806,8 @@ export const usePostStore = defineStore('post', () => {
         mutationObserver,
 
         setSelectedUserForConnection,
-        setShowConnectionModal,
-        closeConnectionModal,
+        setShowConnectionRequestModal,
+        closeConnectionRequestModal,
         showRecommended
 
     };

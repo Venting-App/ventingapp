@@ -112,13 +112,18 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue';
 import { Loader2, Check, X } from 'lucide-vue-next';
 import { useUserStore } from '@/stores/user';
 import { useConnectionStore } from '@/stores/connection';
-
+import { usePostStore } from '@/stores/post';
+import { nextTick } from 'vue';
 const connectionStore = useConnectionStore();
 const userStore = useUserStore();
-
-defineProps({
+const postStore = usePostStore();
+const props = defineProps({
     show: {
         type: Boolean,
+        required: true
+    },
+    post_id: {
+        type: [String, Number],
         required: true
     },
     connections: {
@@ -131,15 +136,25 @@ defineProps({
     }
 })
 
-const emit = defineEmits(['connection-updated', 'close'])
+const emit = defineEmits(['close'])
 
 const handleAcceptConnection = async (connection) => {
     const success = await connectionStore.handleAcceptConnection(connection);
-    if(success) emit('connection-updated');
+    if(success) {
+      postStore.updatePostFromBackend(props.post_id);
+      nextTick(() => {
+          emit('close');
+      });
+    }
 }
 
 const handleRejectConnection = async (connection) => {
     const success = await connectionStore.handleRejectConnection(connection);
-    if(success) emit('connection-updated');
+    if(success) {
+      postStore.updatePostFromBackend(props.post_id);
+      nextTick(() => {
+          emit('close');
+      });
+    }
 }
 </script>

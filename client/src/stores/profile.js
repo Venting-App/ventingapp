@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { message } from 'ant-design-vue';
 import api from '@/api/axios';
 
@@ -15,10 +15,21 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
     const nextPage = ref(null);
     const hasNextPage = computed(() => !!nextPage.value);
     const showDonationModal = ref(false);
+    const showCommentModal = ref(false);
+    const showConnectionsModal = ref(false);
+    const loadingConnections = ref(false);
+
+    const showShareModal = ref(false);
+    const connections = ref([]);
+
+    const connectionPromptPurpose = ref('donate'); 
+    const showConnectionPrompt = ref(false);
+    const processingDonation = ref(false);
+
     const selectedPost = ref(null);
     const likingPostId = ref(null);
     const savingPostId = ref(null);
-    const showConnectionModal = ref(false);
+    const showConnectionRequestModal = ref(false);
     const showConnectionProfileModal = ref(false);
     const isConnectsModalOpen = ref(false);
 
@@ -30,13 +41,25 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
         isConnectsModalOpen.value = value;
     }
 
+    const setLoadingConnections = (value) => {
+        loadingConnections.value = value;
+    }
+
+    const setConnections = (value) => {
+        connections.value = value;
+    }
+
     const setShowDonationModal = (value) => {
         showDonationModal.value = value;
     }
 
-    const setShowConnectionModal = (value) => {
-        showConnectionModal.value = value;
+    const setShowConnectionRequestModal = (value) => {
+        showConnectionRequestModal.value = value;
     }  
+
+    const setProcessingDonation = (value) => {
+        processingDonation.value = value;
+    }
 
     const setShowConnectionProfileModal = (value) => {
         showConnectionProfileModal.value = value;
@@ -146,15 +169,41 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
         showDonationModal.value = true;
     };
 
+
+    const openShareModal = (post) => {
+        selectedPost.value = post;
+        showShareModal.value = true;
+    };
+    const closeShareModal = () => {
+        showShareModal.value = false;
+    };
+
+    const openCommentModal = (post) => {
+        selectedPost.value = post;
+        showCommentModal.value = true;
+    };
+
+    const closeCommentModal = () => {
+        showCommentModal.value = false;
+    };
+
+    const openConnectionPrompt = (post) => {
+        selectedPost.value = post;
+        showConnectionPrompt.value = true;
+    };
+    const setConnectionPromptPurpose = (purpose) => {
+        connectionPromptPurpose.value = purpose;
+    };
+    const closeConnectionPrompt = async () => {
+        showConnectionPrompt.value = false;
+    }
+
     const closeDonationModal = async (connected = false) => {
         if (connected && selectedPost.value) {
             // If user just connected, start a chat
             await handleChat(selectedPost.value);
         }
         showDonationModal.value = false;
-        setTimeout(() => {
-            selectedPost.value = null;
-        }, 300);
     };
 
 
@@ -210,8 +259,17 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
         }
     };
 
-    const closeConnectionModal = () => {
-        showConnectionModal.value = false;
+    const openConnectionsModal = (post) => {
+        selectedPost.value = post;
+        showConnectionsModal.value = true;
+    };
+
+    const closeConnectionsModal = () => {
+        showConnectionsModal.value = false;
+    };
+
+    const closeConnectionRequestModal = () => {
+        showConnectionRequestModal.value = false;
     };
     const closeConnectionProfileModal = () => {
         showConnectionProfileModal.value = false;
@@ -219,7 +277,7 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
 
     const confirmConnectionRequest = async (messageText = '') => {
         
-        closeConnectionModal();
+        closeConnectionRequestModal();
         closeConnectionProfileModal();
         
         try {
@@ -250,34 +308,16 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
             let errorMessage = 'Failed to send connection request. Please try again.';
             
             if (error.response?.status === 400) {
-            if (error.response?.data?.detail?.includes('already connected')) {
-                errorMessage = 'You are already connected with this user';
-            } else if (error.response?.data?.detail?.includes('pending')) {
-                errorMessage = 'Connection request already pending';
-            }
+                if (error.response?.data?.detail?.includes('already connected')) {
+                    errorMessage = 'You are already connected with this user';
+                } else if (error.response?.data?.detail?.includes('pending')) {
+                    errorMessage = 'Connection request already pending';
+                } else if (error.response?.data?.error) {
+                    errorMessage = error.response.data.error;
+                }
             }
             
             message.error(errorMessage);
-        }
-    };
-    const handleConnectionsUpdated = async (postId) => {
-        if (!postId) return;
-
-        // Check if post is already in the feed
-        const newPostData = await fetchPostById(postId);
-        const existingPost = posts.value.find(p => String(p.id) === String(postId));
-        if (existingPost) {
-            const postIndex = posts.value.findIndex(p => p.id === postId);
-            if (postIndex !== -1) {
-            posts.value[postIndex] = newPostData;
-            }
-            return;
-        }
-
-        // If not, fetch the post
-        if (newPostData) {
-            // Add to the beginning of the posts array
-            posts.value.unshift(newPostData);
         }
     };
 
@@ -349,7 +389,7 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
             // Set pending state
             const postIndex = posts.value.findIndex(p => p.id === post.id);
             if (postIndex !== -1) {
-            posts.value[postIndex].pending_connection = true;
+                posts.value[postIndex].pending_connection = true;
             }
 
             // Make the API call to either connect or disconnect
@@ -388,7 +428,7 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
             // Reset pending state on error
             const postIndex = posts.value.findIndex(p => p.id === post.id);
             if (postIndex !== -1) {
-            posts.value[postIndex].pending_connection = false;
+                posts.value[postIndex].pending_connection = false;
             }
             
             let errorMessage = `Failed to ${isConnected ? 'unfollow' : 'follow'} user. Please try again.`;
@@ -571,6 +611,15 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
         profileId.value = null;
     }
 
+    watch(posts, (newPosts) => {
+        if (selectedPost.value) {
+            const updatedPost = newPosts.find(p => p.id === selectedPost.value.id);
+            if (updatedPost) {
+                selectedPost.value = { ...selectedPost.value, ...updatedPost };
+            }
+        }
+    }, { deep: true });
+
 
     return {
         profileId,
@@ -595,7 +644,32 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
         selectedPost,
         likingPostId,
         savingPostId,
-        showConnectionModal,
+        showConnectionRequestModal,
+        showConnectionPrompt,
+        connectionPromptPurpose,
+        showCommentModal,
+        showConnectionsModal,
+        connections,
+        loadingConnections,
+        setConnections,
+        
+
+        openCommentModal,
+        closeCommentModal,
+
+        openConnectionPrompt,
+        closeConnectionPrompt,
+        setConnectionPromptPurpose,
+
+        openShareModal,
+        closeShareModal,
+        
+        openConnectionsModal,
+        closeConnectionsModal,
+        setLoadingConnections,
+
+        processingDonation,
+        setProcessingDonation,
 
         handleUpdatePostObj,
 
@@ -612,7 +686,6 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
         handleFollow,
         confirmConnectionRequest,
 
-        handleConnectionsUpdated,
         checkUrlForPost,
 
         startVisiblePostsPolling,
@@ -625,8 +698,8 @@ export const useOtherProfilePostStore = defineStore('otherProfilePost', () => {
         visibilityObserver,
         mutationObserver,
 
-        setShowConnectionModal,
-        closeConnectionModal,
+        setShowConnectionRequestModal,
+        closeConnectionRequestModal,
         closeConnectionProfileModal,
 
         fetchUserProfile

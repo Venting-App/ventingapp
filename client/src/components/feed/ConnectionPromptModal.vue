@@ -1,21 +1,40 @@
 <template>
-  <Dialog :open="show" @close="$emit('close')" class="relative z-50">
-    <!-- The backdrop -->
-    <div class="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" />
+  <TransitionRoot appear :show="show" as="template">
+    <Dialog as="div" class="relative z-50" @close="closeModal">
+      <TransitionChild
+        as="template"
+        enter="ease-out duration-300"
+        enter-from="opacity-0"
+        enter-to="opacity-100"
+        leave="ease-in duration-200"
+        leave-from="opacity-100"
+        leave-to="opacity-0"
+      >
+        <div class="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm transition-opacity" />
+      </TransitionChild>
 
-    <!-- Full-screen container to center the panel -->
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-      <DialogPanel class="w-full max-w-sm bg-white rounded-2xl p-6 shadow-2xl border border-zinc-100 transform transition-all">
-        <div class="text-center">
-          <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 mb-4 ring-8 ring-violet-50">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-          </div>
-          
-          <DialogTitle class="text-xl font-bold text-zinc-900 mb-2">
-            Connect with {{ userName }}
-          </DialogTitle>
+      <div class="fixed inset-0 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center">
+          <TransitionChild
+            as="template"
+            enter="ease-out duration-300"
+            enter-from="opacity-0 scale-95"
+            enter-to="opacity-100 scale-100"
+            leave="ease-in duration-200"
+            leave-from="opacity-100 scale-100"
+            leave-to="opacity-0 scale-95"
+          >
+            <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-2xl transition-all border border-zinc-100">
+              <div class="text-center">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 mb-4 ring-8 ring-violet-50">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+                
+                <DialogTitle as="h3" class="text-xl font-bold leading-6 text-zinc-900 mb-2">
+                  Connect with {{ userName }}
+                </DialogTitle>
           
           <div class="mt-3">
             <p class="text-sm text-zinc-500 leading-relaxed px-2">
@@ -69,14 +88,17 @@
             </button>
           </div>
         </div>
-      </DialogPanel>
-    </div>
-  </Dialog>
+            </DialogPanel>
+          </TransitionChild>
+        </div>
+      </div>
+    </Dialog>
+  </TransitionRoot>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue';
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
 import { Loader2 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -104,6 +126,10 @@ const props = defineProps({
 
 const emit = defineEmits(['connect', 'close']);
 const loading = ref(false);
+
+const closeModal = () => {
+  emit('close');
+};
 
 const handleConnect = async () => {
   try {

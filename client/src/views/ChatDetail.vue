@@ -312,10 +312,10 @@
     
     <!-- Connection Request Modal (for FeedItem in modal) -->
     <ConnectionRequestModal
-      v-if="postStore.showConnectionModal"
-      :is-open="postStore.showConnectionModal"
+      v-if="postStore.showConnectionRequestModal"
+      :is-open="postStore.showConnectionRequestModal"
       :user-name="postStore.selectedUserForConnection?.posted_by?.name || 'this user'"
-      @close="postStore.closeConnectionModal()"
+      @close="postStore.closeConnectionRequestModal()"
       @confirm="confirmConnectionRequest"
     />
 

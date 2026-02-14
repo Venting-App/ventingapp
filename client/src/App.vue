@@ -1,11 +1,12 @@
 <script setup>
 import { RouterView, useRoute, useRouter } from 'vue-router';
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, onMounted, onUnmounted, onBeforeUnmount } from 'vue';
 import SupportModal from '@/components/common/SupportModal.vue';
 
 import CelebrationModal from '@/components/transaction/CelebrationModal.vue';
 import { useUserStore } from '@/stores/user';
 import { useSupportStore } from '@/stores/support';
+import { usePostStore } from '@/stores/post';
 import { useTransactionStore } from '@/stores/transaction';
 const router = useRouter();
 const showCelebration = ref(false);
@@ -13,6 +14,7 @@ const recentTransaction = ref(null);
 const userStore = useUserStore();
 const supportStore = useSupportStore();
 const transactionStore = useTransactionStore();
+const postStore = usePostStore();
 const checkForSuccess = async () => {
   if(!userStore.isAuthenticated) return;
   console.log("checking for success")
@@ -57,6 +59,7 @@ const handleVisibilityChange = () => {
 };
 
 onMounted(async () => {
+  postStore.initBreakpoints();
   const splash = document.getElementById('splash')
   await userStore.checkAuth();
 
@@ -75,6 +78,9 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
+onUnmounted(() => {
+  postStore.destroyBreakpoints();
+})
 </script>
 
 <template>
