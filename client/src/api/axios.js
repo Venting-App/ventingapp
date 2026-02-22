@@ -31,7 +31,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-
+    console.log("error", error)
     if (error.response?.status === 413) {
       message.error('File is too large. Please upload a smaller file.');
       return Promise.reject(error);
