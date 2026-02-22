@@ -33,14 +33,14 @@ api.interceptors.response.use(
   async (error) => {
     console.log("error", error)
     if (error.response?.status === 413) {
-      message.error('File is too large. Please upload a smaller file.', 5);
+      message.error('File is too large. Please upload a smaller file.', 10);
       return Promise.reject(error);
     }
     if (!error.response && error.code === 'ERR_NETWORK') {
       // Logic: If we were sending a POST/PUT with a body, Nginx likely killed it
       const hasBody = error.config?.data;
       if (hasBody) {
-        message.error('The file may be too large for the server.', 5);
+        message.error('The file may be too large for the server.', 10);
         return Promise.reject(new Error('Potential 413 Payload Too Large'));
       }
     }
