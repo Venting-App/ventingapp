@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
+import { message } from 'ant-design-vue';
 
 // Create axios instance
 const api = axios.create({
@@ -26,10 +27,16 @@ api.interceptors.request.use(
   }
 );
 
-// Add a response interceptor to handle 401 errors and token refresh
+// Add a response interceptor to handle 401 and 413 errors and token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+
+    if (error.response?.status === 413) {
+      message.error('File is too large. Please upload a smaller file.');
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
     const authStore = useAuthStore();
     
