@@ -36,6 +36,14 @@ api.interceptors.response.use(
       message.error('File is too large. Please upload a smaller file.');
       return Promise.reject(error);
     }
+    if (!error.response && error.code === 'ERR_NETWORK') {
+      // Logic: If we were sending a POST/PUT with a body, Nginx likely killed it
+      const hasBody = error.config?.data;
+      if (hasBody) {
+        message.error('Upload failed. The file may be too large for the server (Max 20MB).');
+        return Promise.reject(new Error('Potential 413 Payload Too Large'));
+      }
+    }
 
     const originalRequest = error.config;
     const authStore = useAuthStore();
