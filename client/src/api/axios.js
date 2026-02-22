@@ -40,7 +40,7 @@ api.interceptors.response.use(
       // Logic: If we were sending a POST/PUT with a body, Nginx likely killed it
       const hasBody = error.config?.data;
       if (hasBody) {
-        message.error('Upload failed. The file may be too large for the server (Max 20MB).');
+        message.error('The file may be too large for the server.');
         return Promise.reject(new Error('Potential 413 Payload Too Large'));
       }
     }
